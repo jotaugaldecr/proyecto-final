@@ -188,12 +188,12 @@ colores_distritos_delitos <-
 
 
 
-# Mapa
+# General
 
 Column {data-height=750}
 -----------------------------------------------------------------------
 
-### Delitos por distrito
+### Mapa - Delitos por distrito
 
 ```{r mapa-leaflet, message=FALSE, warning=FALSE}
 leaflet() %>%
@@ -366,7 +366,7 @@ ggplotly(tipo_vic) %>% config(locale = 'es')
 
 # Registro
 
-### Tabla de Información 
+### Registro de delitos 
 
 ```{r tabla, message=FALSE, echo=FALSE,warning=FALSE}
 datos_policia %>%
