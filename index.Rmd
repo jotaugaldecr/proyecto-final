@@ -2,8 +2,8 @@
 title: "Cantidad de delitos por Distrito en Costa Rica"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
-    vertical_layout: fill
+    theme: readable
+    
 ---
 
 ```{r setup, include=FALSE}
@@ -188,12 +188,12 @@ colores_distritos_delitos <-
 
 
 
+# Mapa
 
-
-Column {data-width=650}
+Column {data-height=750}
 -----------------------------------------------------------------------
 
-### Chart A
+### Delitos por distrito
 
 ```{r mapa-leaflet, message=FALSE, warning=FALSE}
 leaflet() %>%
@@ -202,6 +202,8 @@ leaflet() %>%
     lat = 9.572735,
     zoom = 7) %>%
   addTiles(group = "OpenStreetMap") %>% # capa base
+  addProviderTiles(provider = providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
+  addProviderTiles(provider = providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
   addPolygons(
     # capa de polígonos
     data = distritos_delitos,
@@ -230,7 +232,7 @@ leaflet() %>%
   ) %>%
   addLayersControl(
     # control de capas
-    baseGroups = c("OpenStreetMap"),
+    baseGroups = c("OpenStreetMap","ESRI World Imagery", "Stamen Toner Lite"),
     overlayGroups = c("Delitos en distritos")
   ) %>%
   addLegend(
@@ -244,18 +246,146 @@ leaflet() %>%
 
 ```
 
-Column {data-width=350}
+Column {data-height=250}
 -----------------------------------------------------------------------
 
-### Chart B
+### Información
+
+**Fuente de los datos: [Organismo de Investigación Policial (OIJ)](https://sitiooij.poder-judicial.go.cr/) e [Instituto Geografico Nacional (IGN)](https://www.snitcr.go.cr/ign_ign)**
+
+**Curso:** GF-0604 Procesamiento de datos geográficos
+
+**Profesor:** Manuel Vargas Del Valle
+
+**Estudiante:** Jonathan Ugalde Castro
 
 ```{r}
 
 ```
 
-### Chart C
+### Delitos
 
-```{r}
-
+```{r grafico, message=FALSE, warning=FALSE}
+grafico <-
+datos_policia %>%
+  count(Delito) %>%
+  ggplot(aes(x = reorder(Delito, n), y = n)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  ggtitle("Registro de Delitos") + 
+  xlab("Delito") +
+  ylab("Cantidad") +
+  theme_get()
+ggplotly(grafico) %>% config(locale = 'es')
 ```
 
+
+
+# Gráficos 
+
+Column
+-----------------------------------------------------------------------
+
+### Víctimas por edad
+
+```{r, dato de delitos por edad, message=FALSE}
+datos_edad <-
+  datos_policia %>%
+  ggplot(aes(x = Delito, fill = Edad)) +
+  geom_bar(position = "fill") +
+  ggtitle("Proporcion por edad") +
+  xlab("Proporción") +
+  ylab("Edad") +
+  coord_flip() +
+  labs(fill = "Edad") +
+  theme_classic()
+ggplotly(datos_edad)
+```
+
+
+
+### Víctima por género
+
+```{r, dato de delitos por genero, message=FALSE}
+datos_genero <-
+  datos_policia %>%
+  ggplot(aes(x = Delito, fill = Genero)) +
+  geom_bar(position = "fill") +
+  ggtitle("Proporcion por género") +
+  xlab("Delito") +
+  ylab("Género") +
+  coord_flip() +
+  labs(fill = "Género") +
+  theme_classic()
+ggplotly(datos_genero)
+```
+
+Column
+-----------------------------------------------------------------------
+
+
+### Delitos por mes
+
+```{r, asignacion de meses, message=FALSE}
+datos_meses <- datos_policia %>% mutate(fecha_meses = lubridate::month(Fecha))
+orden_meses <-c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre")
+```
+
+
+
+
+```{r, grafico delitos por mes, message=FALSE}
+delitos_meses <-
+  
+  datos_meses %>%
+  count(fecha_meses) %>%
+  ggplot(level = level_order, (aes(x = reorder(orden_meses, fecha_meses), y = n))) +
+  geom_bar(stat = "identity") +
+  ggtitle("Cantidad de Delitos por mes") +
+  xlab("Mes") +
+  ylab("Cantidad") +
+  coord_flip() + 
+  theme_dark()
+ggplotly(delitos_meses)
+```
+
+
+### Tipo de Víctima
+
+```{r tipo-victima}
+tablaa=summarise(group_by(datos_policia, Victima),
+                n=n())
+tipo_vic <- 
+  ggplot(tablaa,aes(y=reorder(Victima,+n), x=n)) +
+  geom_bar(stat = "identity", fill=c("black")) +
+  ylab("Tipo de víctima") +
+  xlab("Cantidad de delitos") +
+  theme_classic()
+ggplotly(tipo_vic) %>% config(locale = 'es')
+```
+
+# Registro
+
+### Tabla de Información 
+
+```{r tabla, message=FALSE, echo=FALSE,warning=FALSE}
+datos_policia %>%
+  dplyr::select(Delito, Fecha, Victima, Edad, Genero, Provincia, Canton, Distrito) %>%
+  mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>%
+  datatable(
+    options = list (
+      pageLength = 50,
+      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+    ),
+    colnames = c(
+      "Delito",
+      "Fecha",
+      "Víctima",
+      "Edad",
+      "Género",
+      "Provincia",
+      "Cantón",
+      "Distrito"
+    )
+  )
+```
