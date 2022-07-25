@@ -3,7 +3,7 @@ title: "Cantidad de delitos por Distrito en Costa Rica"
 output: 
   flexdashboard::flex_dashboard:
     theme: readable
-    
+    runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -127,7 +127,7 @@ datos_policia <-
 
 datos_policia <-
   datos_policia %>%
-  mutate(distrito_normalizado = tolower(stri_trans_general(Distrito, id = "Latin-ASCII")))  #no hzio ni vegr
+  mutate(distrito_normalizado = tolower(stri_trans_general(Distrito, id = "Latin-ASCII")))  
 
 
 ```
@@ -190,7 +190,7 @@ colores_distritos_delitos <-
 
 # General
 
-Column {data-height=750}
+Column {data-height=750, .sidebar}
 -----------------------------------------------------------------------
 
 ### Mapa - Delitos por distrito
@@ -214,6 +214,10 @@ leaflet() %>%
     weight = 1.0,
     popup = paste(
       # ventana emergente
+      paste(
+        "<strong>Provincia:</strong>",
+        distritos_delitos$provincia
+      ),
       paste(
         "<strong>Cantón:</strong>",
         distritos_delitos$canton
@@ -259,6 +263,7 @@ Column {data-height=250}
 
 **Estudiante:** Jonathan Ugalde Castro
 
+
 ```{r}
 
 ```
@@ -294,12 +299,12 @@ datos_edad <-
   ggplot(aes(x = Delito, fill = Edad)) +
   geom_bar(position = "fill") +
   ggtitle("Proporcion por edad") +
-  xlab("Proporción") +
-  ylab("Edad") +
+  xlab("Delito") +
+  ylab("Proporción") +
   coord_flip() +
   labs(fill = "Edad") +
   theme_classic()
-ggplotly(datos_edad)
+ggplotly(datos_edad)%>% config(locale = 'es')
 ```
 
 
@@ -313,11 +318,11 @@ datos_genero <-
   geom_bar(position = "fill") +
   ggtitle("Proporcion por género") +
   xlab("Delito") +
-  ylab("Género") +
+  ylab("Proporción") +
   coord_flip() +
   labs(fill = "Género") +
   theme_classic()
-ggplotly(datos_genero)
+ggplotly(datos_genero)%>% config(locale = 'es')
 ```
 
 Column
@@ -346,7 +351,7 @@ delitos_meses <-
   ylab("Cantidad") +
   coord_flip() + 
   theme_dark()
-ggplotly(delitos_meses)
+ggplotly(delitos_meses)%>% config(locale = 'es')
 ```
 
 
