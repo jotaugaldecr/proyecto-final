@@ -25,6 +25,11 @@ library(readr)
 library(leafem)
 library(leaflet.extras)
 library(shiny)
+library(rsconnect)
+
+
+
+
 ```
 
 
@@ -184,18 +189,98 @@ colores_distritos_delitos <-
 
 
 
+```{r listas-react}
+
+lista_tipo_delito <- unique(datos_policia$Delito)
+lista_tipo_delito <- sort(lista_tipo_delito)
+lista_tipo_delito <- c("Todos", lista_tipo_delito)
+
+lista_victima <- unique(datos_policia$Victima)
+lista_victima <- sort(lista_victima)
+lista_victima <- c("Todas", lista_victima)
+
+lista_edad <- unique(datos_policia$Edad)
+lista_edad <- sort(lista_edad)
+lista_edad <- c("Todos", lista_edad)
+
+lista_genero <- unique(datos_policia$Genero)
+lista_genero <- sort(lista_genero)
+lista_genero <- c("Todos", lista_genero)
+```
+
+```{r filtrar}
+h3("Filtros de datos")
+# Tipo de delito
+selectInput(
+  inputId = "Delito",
+  label = "Tipo de Delito",
+  choices = lista_tipo_delito,
+  selected = "Todos"
+)
+# Víctima
+selectInput(
+  inputId = "Victima",
+  label = "Víctima",
+  choices = lista_victima,
+  selected = "Todas"
+)
+# Género
+selectInput(
+  inputId = "Genero",
+  label = "Género",
+  choices = lista_genero,
+  selected = "Todos"
+)
+# Edad
+selectInput(
+  inputId = "Edad",
+  label = "Edad",
+  choices = lista_edad,
+  selected = "Todos"
+)
 
 
+# Función para filtrar los datos con base en los controles de entrada
+filtrarDelitos <- reactive({
+  delitos_filtrados <- datos_policia
+  
+  if (input$Delito != "Todos") {
+    delitos_filtrados <-
+      delitos_filtrados %>%
+      filter(Delito == input$Delito)}
+  if (input$Victima != "Todas") {
+    delitos_filtrados <-
+      delitos_filtrados %>%
+      filter(Victima == input$Victima)}
+  if (input$Genero != "Todos") {
+    delitos_filtrados <-
+      delitos_filtrados %>%
+      filter(Genero == input$Genero)}
+  if (input$Edad != "Todos") {
+    delitos_filtrados <-
+      delitos_filtrados %>%
+      filter(Edad == input$Edad)}
+  
+   return(delitos_filtrados)
+})
 
+
+```
 
 # General
 
-Column {data-height=750, .sidebar}
+Column {data-height=750}
 -----------------------------------------------------------------------
 
 ### Mapa - Delitos por distrito
 
 ```{r mapa-leaflet, message=FALSE, warning=FALSE}
+
+
+renderLeaflet({
+  datos_policia <- filtrarDelitos()
+
+
 leaflet() %>%
   setView(# centro y nivel inicial de acercamiento
     lng = -84.19452,
@@ -248,6 +333,8 @@ leaflet() %>%
     title = "Cantidad de delitos"
   )
 
+})
+
 ```
 
 Column {data-height=250}
@@ -271,6 +358,10 @@ Column {data-height=250}
 ### Delitos
 
 ```{r grafico, message=FALSE, warning=FALSE}
+
+renderPlotly({
+  datos_policia <- filtrarDelitos()
+
 grafico <-
 datos_policia %>%
   count(Delito) %>%
@@ -281,7 +372,13 @@ datos_policia %>%
   xlab("Delito") +
   ylab("Cantidad") +
   theme_get()
-ggplotly(grafico) %>% config(locale = 'es')
+  
+  grafico %>%
+    ggplotly() %>% 
+    config(locale = 'es')
+})
+
+
 ```
 
 
@@ -294,6 +391,10 @@ Column
 ### Víctimas por edad
 
 ```{r, dato de delitos por edad, message=FALSE}
+
+renderPlotly({
+  datos_policia <- filtrarDelitos()
+
 datos_edad <-
   datos_policia %>%
   ggplot(aes(x = Delito, fill = Edad)) +
@@ -304,7 +405,12 @@ datos_edad <-
   coord_flip() +
   labs(fill = "Edad") +
   theme_classic()
-ggplotly(datos_edad)%>% config(locale = 'es')
+
+datos_edad %>%
+    ggplotly() %>% 
+    config(locale = 'es')
+})
+
 ```
 
 
@@ -312,6 +418,12 @@ ggplotly(datos_edad)%>% config(locale = 'es')
 ### Víctima por género
 
 ```{r, dato de delitos por genero, message=FALSE}
+
+renderPlotly({
+  datos_policia <- filtrarDelitos()
+
+
+
 datos_genero <-
   datos_policia %>%
   ggplot(aes(x = Delito, fill = Genero)) +
@@ -322,7 +434,12 @@ datos_genero <-
   coord_flip() +
   labs(fill = "Género") +
   theme_classic()
-ggplotly(datos_genero)%>% config(locale = 'es')
+
+ datos_genero %>%
+    ggplotly() %>% 
+    config(locale = 'es')
+})
+
 ```
 
 Column
@@ -340,6 +457,10 @@ orden_meses <-c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", 
 
 
 ```{r, grafico delitos por mes, message=FALSE}
+
+renderPlotly({
+  datos_policia <- filtrarDelitos()
+
 delitos_meses <-
   
   datos_meses %>%
@@ -351,13 +472,22 @@ delitos_meses <-
   ylab("Cantidad") +
   coord_flip() + 
   theme_dark()
-ggplotly(delitos_meses)%>% config(locale = 'es')
+
+
+  delitos_meses %>%
+    ggplotly() %>% 
+    config(locale = 'es')
+})
 ```
 
 
 ### Tipo de Víctima
 
 ```{r tipo-victima}
+renderPlotly({
+  datos_policia <- filtrarDelitos()
+
+
 tablaa=summarise(group_by(datos_policia, Victima),
                 n=n())
 tipo_vic <- 
@@ -366,7 +496,12 @@ tipo_vic <-
   ylab("Tipo de víctima") +
   xlab("Cantidad de delitos") +
   theme_classic()
-ggplotly(tipo_vic) %>% config(locale = 'es')
+
+tipo_vic %>%
+    ggplotly() %>% 
+    config(locale = 'es')
+})
+
 ```
 
 # Registro
@@ -374,6 +509,12 @@ ggplotly(tipo_vic) %>% config(locale = 'es')
 ### Registro de delitos 
 
 ```{r tabla, message=FALSE, echo=FALSE,warning=FALSE}
+
+renderDT({
+  datos_policial <- filtrarDelitos()
+
+
+
 datos_policia %>%
   dplyr::select(Delito, Fecha, Victima, Edad, Genero, Provincia, Canton, Distrito) %>%
   mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>%
@@ -393,4 +534,6 @@ datos_policia %>%
       "Distrito"
     )
   )
+
+})  
 ```
